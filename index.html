@@ -9,36 +9,41 @@
 
 <h2>Atrapa el Cuadrado PRO</h2>
 
-<p>
+<p id="hudNormal">
   Puntos: <span id="score">0</span> |
-  Récord (<span id="modeText">Fácil</span>):
-  <span id="record">0</span>
+  Récord: <span id="record">0</span>
 </p>
 
-<p>
+<p id="hudHide" style="display:none;">
+  Fase: <span id="phase">1</span>
+</p>
+
+<p id="timeBox">
   Tiempo:
-  <input type="number" id="timeInput" value="30" min="5" max="120">
+  <input type="number" id="timeInput" value="30" min="5" max="120"> s
 </p>
 
-<p>
-  Modo:
-  <select id="mode">
-    <option value="easy">Fácil</option>
-    <option value="normal">Normal</option>
-    <option value="hard" disabled>Difícil 🔒 (5 pts)</option>
-    <option value="nightmare" disabled>Pesadilla 🔒 (10 pts)</option>
-  </select>
-</p>
+<h3>Modo Normal</h3>
+<select id="mode">
+  <option value="easy">Fácil</option>
+  <option value="normal">Normal</option>
+  <option value="hard" disabled>Difícil 🔒</option>
+  <option value="nightmare" disabled>Pesadilla 🔒</option>
+</select>
 
-<div id="gameArea">
-  <div class="square real"></div>
-  <div class="square fake"></div>
-  <div class="square fake"></div>
-</div>
+<h3>Modos Extras</h3>
+<select id="extraMode">
+  <option value="none">—</option>
+  <option value="hide">Escondidas</option>
+</select>
+
+<div id="gameArea"></div>
 
 <div id="comboMsg"></div>
 
 <button id="startBtn">Empezar</button>
+<button id="exitBtn" style="display:none;">Salir del modo</button>
+
 <p id="endMsg"></p>
 
 <script src="game.js"></script>
