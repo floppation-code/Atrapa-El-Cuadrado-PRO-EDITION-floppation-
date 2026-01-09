@@ -14,13 +14,12 @@
     Puntos: <span id="score">0</span> |
     Récord: <span id="record">0</span>
   </p>
-
   <p>
     Tiempo:
     <input type="number" id="timeInput" value="30" min="5" max="120"> s
   </p>
 
-  <h3>Modo</h3>
+  <h3>Modo Normal</h3>
   <select id="mode">
     <option value="easy">Fácil</option>
     <option value="normal">Normal</option>
@@ -29,7 +28,7 @@
   </select>
 </div>
 
-<div id="panelHide" hidden>
+<div id="panelHide" style="display:none;">
   <p>Fase: <span id="phase">1</span></p>
 </div>
 
@@ -41,8 +40,10 @@
 
 <div id="gameArea"></div>
 
+<div id="comboMsg"></div>
+
 <button id="startBtn">Empezar</button>
-<button id="exitBtn" hidden>Salir</button>
+<button id="exitBtn" style="display:none;">Salir</button>
 
 <p id="msg"></p>
 
