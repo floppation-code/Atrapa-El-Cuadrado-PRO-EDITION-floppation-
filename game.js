@@ -38,6 +38,7 @@ function clearGame() {
   timer = null;
   moveInterval = null;
   gameArea.innerHTML = "";
+  stopMusic();
 }
 
 /* ===== RANDOM ===== */
@@ -50,6 +51,45 @@ function randomPos(el) {
 function showCombo() {
   comboMsg.textContent = `🔥 ${score} puntos`;
   setTimeout(() => (comboMsg.textContent = ""), 800);
+}
+
+/* ===== MÚSICA POR MODO ===== */
+let audioCtx = null;
+let oscillator = null;
+
+function playMusic(freqs) {
+  stopMusic();
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  oscillator = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  oscillator.connect(gain);
+  gain.connect(audioCtx.destination);
+  gain.gain.value = 0.05;
+  oscillator.type = "sine";
+
+  let index = 0;
+  oscillator.frequency.value = freqs[index];
+  oscillator.start();
+
+  oscillator.interval = setInterval(() => {
+    index = (index + 1) % freqs.length;
+    oscillator.frequency.setValueAtTime(freqs[index], audioCtx.currentTime);
+  }, 400);
+
+  oscillator.stopTime = setTimeout(() => {}, 0); // placeholder
+}
+
+function stopMusic() {
+  if (oscillator) {
+    clearInterval(oscillator.interval);
+    oscillator.stop();
+    oscillator.disconnect();
+    oscillator = null;
+  }
+  if (audioCtx) {
+    audioCtx.close();
+    audioCtx = null;
+  }
 }
 
 /* ===== MODO NORMAL ===== */
@@ -79,7 +119,7 @@ function startNormalMode() {
   realSquare = squares[0];
   const fakes = squares.slice(1);
 
-  // Asignar colores según modo
+  // Colores
   if (mode === "easy") {
     realSquare.style.background = "green";
     fakes.forEach(f => (f.style.background = "darkgreen"));
@@ -99,6 +139,12 @@ function startNormalMode() {
   } else {
     gameArea.style.background = "#f2f2f2";
   }
+
+  // ===== MÚSICA SEGÚN MODO =====
+  if (mode === "easy") playMusic([261, 329, 392]); // C-E-G
+  if (mode === "normal") playMusic([330, 392, 440]); // E-G-A
+  if (mode === "hard") playMusic([440, 494, 523]); // A-B-C
+  if (mode === "nightmare") playMusic([523, 587, 659]); // C5-D5-E5
 
   // Eventos
   realSquare.addEventListener("pointerdown", () => {
@@ -122,7 +168,14 @@ function startNormalMode() {
   squares.forEach(randomPos);
   gameRunning = true;
 
-  moveInterval = setInterval(() => squares.forEach(randomPos), 900);
+  // ===== VELOCIDAD SEGÚN MODO =====
+  let speed = 900;
+  if (mode === "easy") speed = 1200;
+  if (mode === "normal") speed = 900;
+  if (mode === "hard") speed = 500;
+  if (mode === "nightmare") speed = 300;
+
+  moveInterval = setInterval(() => squares.forEach(randomPos), speed);
 
   timer = setInterval(() => {
     timeLeft--;
@@ -142,11 +195,8 @@ function startHideMode() {
   const count = 12 + hidePhase * 2;
   squares = [];
 
-  // Música propia
-  const audio = new Audio();
-  audio.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAABCxAgAEABAAZGF0YQAAAAA="; // tono simple
-  audio.loop = true;
-  audio.play();
+  // Música propia escondidas (tono simple)
+  playMusic([150, 200, 250]);
 
   for (let i = 0; i < count; i++) {
     const d = document.createElement("div");
@@ -167,7 +217,6 @@ function startHideMode() {
       if (!gameRunning) return;
       if (s === realSquare) {
         hidePhase++;
-        audio.pause();
         startHideMode();
       }
     });
@@ -187,6 +236,7 @@ function endGame(mode) {
   } else {
     msg.textContent = "Fin del juego";
   }
+  stopMusic();
 }
 
 /* ===== BOTONES ===== */
