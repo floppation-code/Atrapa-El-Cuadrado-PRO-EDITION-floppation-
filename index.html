@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Mi Juego</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ACÁ PEGÁS TU HTML DEL JUEGO -->
+
+<script src="game.js"></script>
+<h2>Atrapa el Cuadrado PRO</h2>
+
+<p>
+  Puntos: <span id="score">0</span> |
+  Récord: <span id="record">0</span>
+</p>
+
+<p>
+  Tiempo:
+  <input type="number" id="timeInput" value="30" min="5" max="120"> s
+</p>
+
+<p>
+  Modo:
+  <select id="mode">
+    <option value="normal">Normal</option>
+    <option value="hard">Difícil</option>
+  </select>
+</p>
+
+<div id="gameArea">
+  <div class="square real"></div>
+  <div class="square fake"></div>
+  <div class="square fake"></div>
+</div>
+
+<button id="startBtn">Empezar</button>
+<p id="endMsg"></p>
