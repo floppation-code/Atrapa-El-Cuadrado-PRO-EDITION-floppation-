@@ -14,101 +14,105 @@ const phaseText = document.getElementById("phase");
 
 let squares = [];
 let realSquare = null;
-
 let score = 0;
 let timeLeft = 0;
 let timer = null;
 let gameRunning = false;
 let hidePhase = 1;
 
-/* ===== UTIL ===== */
-function clearGame() {
-  clearInterval(timer);
-  timer = null;
-  gameRunning = false;
-  gameArea.innerHTML = "";
+/* ===== Web Audio ===== */
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playTone(frequency, duration=0.15) {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+  gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
 }
 
+/* ===== UTILS ===== */
 function randomPos(el) {
   el.style.left = Math.random() * (gameArea.clientWidth - 50) + "px";
   el.style.top = Math.random() * (gameArea.clientHeight - 50) + "px";
 }
 
-/* ===== RECORD ===== */
-function getRecord(mode) {
-  return Number(localStorage.getItem("record_" + mode) || 0);
+function clearGame() {
+  clearInterval(timer);
+  timer = null;
+  gameRunning = false;
+  msg.textContent = "";
+  squares.forEach(s => s.remove());
+  squares = [];
 }
-function setRecord(mode, val) {
-  localStorage.setItem("record_" + mode, val);
+
+/* ===== RECORD ===== */
+const getRecord = mode => Number(localStorage.getItem("record_" + mode) || 0);
+const setRecord = (mode, v) => localStorage.setItem("record_" + mode, v);
+
+/* ===== CREATE SQUARES ===== */
+function createSquares(count, onClick) {
+  for (let i = 0; i < count; i++) {
+    const s = document.createElement("div");
+    s.className = "square";
+    s.addEventListener("pointerdown", () => onClick(s));
+    gameArea.appendChild(s);
+    randomPos(s);
+    squares.push(s);
+  }
 }
 
 /* ===== MODO NORMAL ===== */
 function startNormal() {
   clearGame();
 
-  panelNormal.style.display = "block";
-  panelHide.style.display = "none";
-  exitBtn.style.display = "none";
+  panelNormal.hidden = false;
+  panelHide.hidden = true;
+  exitBtn.hidden = true;
 
   score = 0;
   scoreText.textContent = 0;
   timeLeft = Number(timeInput.value);
-  msg.textContent = "";
-
   const mode = modeSelect.value;
   recordText.textContent = getRecord(mode);
 
-  squares = [];
-
-  for (let i = 0; i < 3; i++) {
-    const d = document.createElement("div");
-    d.className = "square";
-    gameArea.appendChild(d);
-    squares.push(d);
-  }
+  createSquares(3, s => {
+    if (!gameRunning) return;
+    if (s === realSquare) {
+      score++;
+      scoreText.textContent = score;
+      randomPos(s);
+      navigator.vibrate?.(30);
+      // Música de toque normal
+      const freq = mode === "easy" ? 440 : mode === "hard" ? 660 : 880;
+      playTone(freq);
+    } else {
+      score = Math.max(0, score - 1);
+      scoreText.textContent = score;
+    }
+  });
 
   realSquare = squares[0];
   const fakes = squares.slice(1);
 
-  realSquare.addEventListener("pointerdown", () => {
-    if (!gameRunning) return;
-    score++;
-    scoreText.textContent = score;
-    randomPos(realSquare);
-  });
-
-  fakes.forEach(f =>
-    f.addEventListener("pointerdown", () => {
-      if (!gameRunning) return;
-      score = Math.max(0, score - 1);
-      scoreText.textContent = score;
-    })
-  );
-
-  let speed = 900;
-
+  // Colores
   if (mode === "easy") {
-    speed = 1300;
     realSquare.style.background = "red";
     fakes.forEach(f => f.style.background = "blue");
-  }
-  if (mode === "hard") {
-    speed = 500;
+  } else if (mode === "hard") {
     realSquare.style.background = "#8b0000";
     fakes.forEach(f => f.style.background = "#7a0000");
-  }
-  if (mode === "nightmare") {
-    speed = 300;
+  } else if (mode === "nightmare") {
     realSquare.style.background = "#7a0000";
     fakes.forEach(f => f.style.background = "#7a0000");
     gameArea.style.background = "#5c0000";
   }
 
-  squares.forEach(s => {
-    s.style.display = "block";
-    randomPos(s);
-  });
-
+  squares.forEach(s => s.style.display = "block");
   gameRunning = true;
 
   timer = setInterval(() => {
@@ -130,41 +134,41 @@ function startNormal() {
 function startHide() {
   clearGame();
 
-  panelNormal.style.display = "none";
-  panelHide.style.display = "block";
-  exitBtn.style.display = "inline-block";
-
-  msg.textContent = "";
+  panelNormal.hidden = true;
+  panelHide.hidden = false;
+  exitBtn.hidden = false;
   phaseText.textContent = hidePhase;
+  msg.textContent = "";
 
   const count = 12 + hidePhase * 2;
-  squares = [];
-
-  for (let i = 0; i < count; i++) {
-    const d = document.createElement("div");
-    d.className = "square";
-    d.style.background = "#9c0000";
-    gameArea.appendChild(d);
-    squares.push(d);
-  }
+  createSquares(count, s => {
+    if (!gameRunning) return;
+    if (s === realSquare) {
+      hidePhase++;
+      startHide();
+    }
+  });
 
   const realIndex = Math.floor(Math.random() * count);
   realSquare = squares[realIndex];
-  realSquare.style.background = "#b00000";
 
   squares.forEach(s => {
-    s.style.display = "block";
-    randomPos(s);
-    s.addEventListener("pointerdown", () => {
-      if (!gameRunning) return;
-      if (s === realSquare) {
-        hidePhase++;
-        startHide();
-      }
-    });
+    s.style.background = "#9c0000";
   });
+  realSquare.style.background = "#b00000";
+
+  squares.forEach(randomPos);
 
   gameRunning = true;
+
+  // Música de Escondidas (suave y misteriosa)
+  const frequencies = [261, 329, 392, 523]; // C4, E4, G4, C5
+  let idx = 0;
+  const musicInterval = setInterval(() => {
+    if (!gameRunning) { clearInterval(musicInterval); return; }
+    playTone(frequencies[idx % frequencies.length], 0.3);
+    idx++;
+  }, 600); // cada 0.6s
 }
 
 /* ===== BOTONES ===== */
@@ -179,8 +183,8 @@ startBtn.onclick = () => {
 
 exitBtn.onclick = () => {
   clearGame();
-  panelHide.style.display = "none";
-  panelNormal.style.display = "block";
-  exitBtn.style.display = "none";
+  panelHide.hidden = true;
+  panelNormal.hidden = false;
+  exitBtn.hidden = true;
   msg.textContent = "Modo cancelado";
 };
