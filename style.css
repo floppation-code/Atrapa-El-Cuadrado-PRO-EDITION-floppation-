@@ -15,19 +15,13 @@ body {
 }
 
 .square {
-  width: 44px;
-  height: 44px;
+  width: 45px;
+  height: 45px;
   position: absolute;
   border-radius: 10px;
 
   touch-action: none;
   user-select: none;
-}
-
-#comboMsg {
-  font-weight: bold;
-  color: darkred;
-  height: 24px;
 }
 
 button {
