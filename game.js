@@ -15,13 +15,52 @@ const endMsg = document.getElementById("endMsg");
 const comboMsg = document.getElementById("comboMsg");
 const modeText = document.getElementById("modeText");
 
-/* ===== RECORD POR MODO ===== */
+/* ===== RECORDS ===== */
 function getRecord(mode) {
   return Number(localStorage.getItem("record_" + mode) || 0);
 }
+function setRecord(mode, val) {
+  localStorage.setItem("record_" + mode, val);
+}
 
-function setRecord(mode, value) {
-  localStorage.setItem("record_" + mode, value);
+/* ===== DESBLOQUEOS ===== */
+function updateUnlocks() {
+  const max = Math.max(
+    getRecord("easy"),
+    getRecord("normal"),
+    getRecord("hard"),
+    getRecord("nightmare")
+  );
+  if (max >= 5) modeSelect.querySelector('[value="hard"]').disabled = false;
+  if (max >= 10) modeSelect.querySelector('[value="nightmare"]').disabled = false;
+}
+
+/* ===== GUARDADO DEL JUEGO ===== */
+function saveGame() {
+  localStorage.setItem("save_game", JSON.stringify({
+    score,
+    timeLeft,
+    mode: modeSelect.value,
+    running: gameRunning
+  }));
+}
+
+function loadGame() {
+  const data = localStorage.getItem("save_game");
+  if (!data) return;
+
+  const save = JSON.parse(data);
+  score = save.score;
+  timeLeft = save.timeLeft;
+  modeSelect.value = save.mode;
+  gameRunning = save.running;
+
+  scoreText.textContent = score;
+  timeInput.value = timeLeft;
+  modeText.textContent = modeSelect.options[modeSelect.selectedIndex].text;
+  recordText.textContent = getRecord(save.mode);
+
+  if (gameRunning) startGame(true);
 }
 
 /* ===== AUDIO SEGURO ===== */
@@ -31,10 +70,8 @@ let musicTimer = null;
 function stopMusic() {
   if (musicTimer) clearInterval(musicTimer);
   musicTimer = null;
-  if (audioCtx) {
-    audioCtx.close();
-    audioCtx = null;
-  }
+  if (audioCtx) audioCtx.close();
+  audioCtx = null;
 }
 
 function playTone(freq, dur, type) {
@@ -53,149 +90,111 @@ function playTone(freq, dur, type) {
 function startMusic(mode) {
   try {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  } catch {
-    return;
-  }
+  } catch { return; }
 
   let notes, speed, wave;
-  if (mode === "normal") {
-    notes = [440, 523, 659];
-    speed = 450;
-    wave = "sine";
-  } else if (mode === "hard") {
-    notes = [220, 247, 294];
-    speed = 300;
-    wave = "square";
-  } else {
-    notes = [110, 98, 123];
-    speed = 200;
-    wave = "sawtooth";
-  }
+  if (mode === "easy") { notes=[392,440,392]; speed=600; wave="sine"; }
+  else if (mode === "normal") { notes=[440,523,659]; speed=450; wave="sine"; }
+  else if (mode === "hard") { notes=[220,247,294]; speed=300; wave="square"; }
+  else { notes=[110,98,123]; speed=200; wave="sawtooth"; }
 
   let i = 0;
   musicTimer = setInterval(() => {
-    playTone(notes[i % notes.length], 0.25, wave);
-    i++;
+    playTone(notes[i++ % notes.length], 0.25, wave);
   }, speed);
 }
 
 /* ===== COLISIONES ===== */
-function collides(a, b) {
-  const ar = a.getBoundingClientRect();
-  const br = b.getBoundingClientRect();
-  return !(
-    ar.right < br.left ||
-    ar.left > br.right ||
-    ar.bottom < br.top ||
-    ar.top > br.bottom
-  );
+function collides(a,b){
+  const ar=a.getBoundingClientRect(), br=b.getBoundingClientRect();
+  return !(ar.right<br.left||ar.left>br.right||ar.bottom<br.top||ar.top>br.bottom);
 }
 
-function randomPos(el) {
-  let ok = false;
-  while (!ok) {
-    const maxX = gameArea.clientWidth - el.clientWidth;
-    const maxY = gameArea.clientHeight - el.clientHeight;
-    el.style.left = Math.random() * maxX + "px";
-    el.style.top = Math.random() * maxY + "px";
-    ok = true;
-    document.querySelectorAll(".square").forEach(o => {
-      if (o !== el && collides(el, o)) ok = false;
+function randomPos(el){
+  let ok=false;
+  while(!ok){
+    el.style.left=Math.random()*(gameArea.clientWidth-50)+"px";
+    el.style.top=Math.random()*(gameArea.clientHeight-50)+"px";
+    ok=true;
+    document.querySelectorAll(".square").forEach(o=>{
+      if(o!==el && collides(el,o)) ok=false;
     });
   }
 }
 
-function moveAll() {
+function moveAll(){
   randomPos(real);
-  fakes.forEach(f => randomPos(f));
-}
-
-/* ===== MENSAJES ===== */
-function showCombo(p) {
-  comboMsg.textContent = `🎉 Wow, ${p} puntos!`;
-  comboMsg.classList.add("show");
-  setTimeout(() => comboMsg.classList.remove("show"), 1200);
-}
-
-/* ===== VIBRACIÓN ===== */
-function vibrate(ms) {
-  if (navigator.vibrate) navigator.vibrate(ms);
+  fakes.forEach(randomPos);
 }
 
 /* ===== JUEGO ===== */
-function endGame() {
-  gameRunning = false;
+function startGame(resume=false){
+  gameRunning = true;
+  document.querySelectorAll(".square").forEach(s=>s.style.display="block");
+
+  const mode = modeSelect.value;
+  recordText.textContent = getRecord(mode);
+  modeText.textContent = modeSelect.options[modeSelect.selectedIndex].text;
+
+  let speed = mode==="easy"?1200:mode==="normal"?900:mode==="hard"?500:300;
+  if(mode==="nightmare") gameArea.style.background="#7a0000";
+
+  moveInterval = setInterval(moveAll, speed);
+  moveAll();
+
+  startMusic(mode);
+
+  timerInterval = setInterval(()=>{
+    timeLeft--;
+    saveGame();
+    if(timeLeft<=0) endGame();
+  },1000);
+}
+
+function endGame(){
+  gameRunning=false;
   clearInterval(moveInterval);
   clearInterval(timerInterval);
   stopMusic();
 
-  document.querySelectorAll(".square").forEach(s => s.style.display = "none");
-
   const mode = modeSelect.value;
-  let rec = getRecord(mode);
-
-  if (score > rec) {
+  if(score > getRecord(mode)){
     setRecord(mode, score);
-    recordText.textContent = score;
-    endMsg.textContent = "🔥 Nuevo récord!";
-  } else {
-    endMsg.textContent = "Fin del juego";
-  }
+    endMsg.textContent="🔥 Nuevo récord!";
+  } else endMsg.textContent="Fin del juego";
 
-  gameArea.style.backgroundColor = "#f2f2f2";
+  saveGame();
+  updateUnlocks();
 }
 
-function tapReal() {
-  if (!gameRunning) return;
+function tapReal(){
+  if(!gameRunning) return;
   score++;
-  vibrate(40);
-  scoreText.textContent = score;
-  if (score % 10 === 0 && score <= 1000) showCombo(score);
+  scoreText.textContent=score;
+  if(score%10===0) comboMsg.classList.add("show"),
+    setTimeout(()=>comboMsg.classList.remove("show"),1000);
+  saveGame();
   randomPos(real);
 }
 
-function tapFake() {
-  if (!gameRunning) return;
-  vibrate(80);
-  score = Math.max(0, score - 1);
-  scoreText.textContent = score;
+function tapFake(){
+  if(!gameRunning) return;
+  score=Math.max(0,score-1);
+  scoreText.textContent=score;
+  saveGame();
 }
 
-real.onclick = tapReal;
-fakes.forEach(f => f.onclick = tapFake);
+real.onclick=tapReal;
+fakes.forEach(f=>f.onclick=tapFake);
 
-/* ===== START ===== */
-startBtn.onclick = () => {
-  score = 0;
-  scoreText.textContent = score;
-  endMsg.textContent = "";
-  timeLeft = Number(timeInput.value);
-  gameRunning = true;
-
-  const mode = modeSelect.value;
-  modeText.textContent =
-    mode === "normal" ? "Normal" :
-    mode === "hard" ? "Difícil" : "Pesadilla";
-
-  recordText.textContent = getRecord(mode);
-
-  document.querySelectorAll(".square").forEach(s => s.style.display = "block");
-
-  if (mode === "normal") {
-    moveInterval = setInterval(moveAll, 900);
-  } else if (mode === "hard") {
-    moveInterval = setInterval(moveAll, 500);
-  } else {
-    gameArea.style.backgroundColor = "#7a0000";
-    moveInterval = setInterval(moveAll, 300);
-  }
-
-  moveAll();
-  startMusic(mode);
-
-  clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    timeLeft--;
-    if (timeLeft <= 0) endGame();
-  }, 1000);
+startBtn.onclick=()=>{
+  score=0;
+  timeLeft=Number(timeInput.value);
+  scoreText.textContent=score;
+  endMsg.textContent="";
+  saveGame();
+  startGame();
 };
+
+updateUnlocks();
+loadGame();
