@@ -1,3 +1,4 @@
+// ===== ELEMENTOS =====
 const gameArea = document.getElementById("gameArea");
 const scoreText = document.getElementById("score");
 const recordText = document.getElementById("record");
@@ -19,15 +20,16 @@ let timeLeft = 0;
 let timer = null;
 let gameRunning = false;
 let hidePhase = 1;
+let moveInterval = null;
+let musicInterval = null;
 
-/* ===== Web Audio ===== */
+// ===== AUDIO =====
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-function playTone(frequency, duration=0.15) {
+function playTone(freq, duration=0.15) {
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.type = "sine";
-  osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
   gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
   osc.connect(gain);
   gain.connect(audioCtx.destination);
@@ -35,7 +37,7 @@ function playTone(frequency, duration=0.15) {
   osc.stop(audioCtx.currentTime + duration);
 }
 
-/* ===== UTILS ===== */
+// ===== UTIL =====
 function randomPos(el) {
   el.style.left = Math.random() * (gameArea.clientWidth - 50) + "px";
   el.style.top = Math.random() * (gameArea.clientHeight - 50) + "px";
@@ -43,6 +45,10 @@ function randomPos(el) {
 
 function clearGame() {
   clearInterval(timer);
+  clearInterval(moveInterval);
+  clearInterval(musicInterval);
+  moveInterval = null;
+  musicInterval = null;
   timer = null;
   gameRunning = false;
   msg.textContent = "";
@@ -50,11 +56,11 @@ function clearGame() {
   squares = [];
 }
 
-/* ===== RECORD ===== */
+// ===== RECORD =====
 const getRecord = mode => Number(localStorage.getItem("record_" + mode) || 0);
-const setRecord = (mode, v) => localStorage.setItem("record_" + mode, v);
+const setRecord = (mode, val) => localStorage.setItem("record_" + mode, val);
 
-/* ===== CREATE SQUARES ===== */
+// ===== CREAR CUADRADOS =====
 function createSquares(count, onClick) {
   for (let i = 0; i < count; i++) {
     const s = document.createElement("div");
@@ -66,7 +72,15 @@ function createSquares(count, onClick) {
   }
 }
 
-/* ===== MODO NORMAL ===== */
+// ===== MOVER CUADRADOS =====
+function startMoving(speed=1000) {
+  if (moveInterval) clearInterval(moveInterval);
+  moveInterval = setInterval(() => {
+    squares.forEach(s => randomPos(s));
+  }, speed);
+}
+
+// ===== MODO NORMAL (TODOS LOS MODOS) =====
 function startNormal() {
   clearGame();
 
@@ -85,10 +99,9 @@ function startNormal() {
     if (s === realSquare) {
       score++;
       scoreText.textContent = score;
-      randomPos(s);
       navigator.vibrate?.(30);
-      // Música de toque normal
-      const freq = mode === "easy" ? 440 : mode === "hard" ? 660 : 880;
+      // Tono según modo
+      const freq = mode === "easy" ? 440 : mode === "normal" ? 550 : mode === "hard" ? 660 : 880;
       playTone(freq);
     } else {
       score = Math.max(0, score - 1);
@@ -103,6 +116,9 @@ function startNormal() {
   if (mode === "easy") {
     realSquare.style.background = "red";
     fakes.forEach(f => f.style.background = "blue");
+  } else if (mode === "normal") {
+    realSquare.style.background = "green";
+    fakes.forEach(f => f.style.background = "#0a8a0a");
   } else if (mode === "hard") {
     realSquare.style.background = "#8b0000";
     fakes.forEach(f => f.style.background = "#7a0000");
@@ -115,11 +131,28 @@ function startNormal() {
   squares.forEach(s => s.style.display = "block");
   gameRunning = true;
 
+  // Movimiento según modo
+  let speed = mode === "easy" ? 1300 : mode === "normal" ? 900 : mode === "hard" ? 500 : 300;
+  startMoving(speed);
+
+  // Música de fondo por modo
+  const freqs = mode === "easy" ? [261, 329, 392] :
+                mode === "normal" ? [293, 349, 440] :
+                mode === "hard" ? [329, 415, 493] :
+                [392, 523, 659];
+  let idx = 0;
+  musicInterval = setInterval(() => {
+    if (!gameRunning) { clearInterval(musicInterval); return; }
+    playTone(freqs[idx % freqs.length], 0.3);
+    idx++;
+  }, 600);
+
+  // Timer
   timer = setInterval(() => {
     timeLeft--;
     if (timeLeft <= 0) {
       gameRunning = false;
-      clearInterval(timer);
+      clearGame();
       if (score > getRecord(mode)) {
         setRecord(mode, score);
         msg.textContent = "🔥 Nuevo récord";
@@ -130,10 +163,9 @@ function startNormal() {
   }, 1000);
 }
 
-/* ===== MODO ESCONDIDAS ===== */
+// ===== MODO ESCONDIDAS =====
 function startHide() {
   clearGame();
-
   panelNormal.hidden = true;
   panelHide.hidden = false;
   exitBtn.hidden = false;
@@ -152,29 +184,26 @@ function startHide() {
   const realIndex = Math.floor(Math.random() * count);
   realSquare = squares[realIndex];
 
-  squares.forEach(s => {
-    s.style.background = "#9c0000";
-  });
+  squares.forEach(s => s.style.background = "#9c0000");
   realSquare.style.background = "#b00000";
 
   squares.forEach(randomPos);
 
   gameRunning = true;
 
-  // Música de Escondidas (suave y misteriosa)
+  // Música Escondidas (suave y misteriosa)
   const frequencies = [261, 329, 392, 523]; // C4, E4, G4, C5
   let idx = 0;
-  const musicInterval = setInterval(() => {
+  musicInterval = setInterval(() => {
     if (!gameRunning) { clearInterval(musicInterval); return; }
     playTone(frequencies[idx % frequencies.length], 0.3);
     idx++;
-  }, 600); // cada 0.6s
+  }, 600);
 }
 
-/* ===== BOTONES ===== */
+// ===== BOTONES =====
 startBtn.onclick = () => {
-  hidePhase = 1;
-  if (extraModeSelect.value === "hide") {
+  if (extraModeSelect.value !== "none") {
     startHide();
   } else {
     startNormal();
