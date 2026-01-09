@@ -22,22 +22,15 @@ body {
   border-radius: 12px;
 }
 
-.real {
-  background-color: red;
-}
-
-.fake {
-  background-color: blue;
-}
+.real { background-color: red; }
+.fake { background-color: blue; }
 
 button {
   font-size: 18px;
   padding: 10px 20px;
 }
 
-#endMsg {
-  font-weight: bold;
-}
+#endMsg { font-weight: bold; }
 
 #comboMsg {
   position: fixed;
