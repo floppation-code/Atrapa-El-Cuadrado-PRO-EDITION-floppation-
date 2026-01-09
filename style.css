@@ -1,8 +1,8 @@
 body {
-  margin: 0;
-  padding: 10px;
   font-family: Arial, sans-serif;
   text-align: center;
+  margin: 0;
+  padding: 10px;
 }
 
 #gameArea {
@@ -11,43 +11,27 @@ body {
   margin: auto;
   border: 3px solid black;
   position: relative;
-  background-color: #f2f2f2;
+  background: #f2f2f2;
 }
 
 .square {
-  width: 50px;
-  height: 50px;
+  width: 44px;
+  height: 44px;
   position: absolute;
-  display: none;
-  border-radius: 12px;
+  border-radius: 10px;
+
+  touch-action: none;
+  user-select: none;
 }
 
-.real { background-color: red; }
-.fake { background-color: blue; }
+#comboMsg {
+  font-weight: bold;
+  color: darkred;
+  height: 24px;
+}
 
 button {
   font-size: 18px;
   padding: 10px 20px;
-}
-
-#endMsg { font-weight: bold; }
-
-#comboMsg {
-  position: fixed;
-  top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.6);
-  font-size: 24px;
-  font-weight: bold;
-  color: gold;
-  background: rgba(0,0,0,0.8);
-  padding: 15px 25px;
-  border-radius: 15px;
-  opacity: 0;
-  transition: 0.3s;
-}
-
-#comboMsg.show {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
+  margin-top: 10px;
 }
