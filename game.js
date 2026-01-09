@@ -75,8 +75,6 @@ function playMusic(freqs) {
     index = (index + 1) % freqs.length;
     oscillator.frequency.setValueAtTime(freqs[index], audioCtx.currentTime);
   }, 400);
-
-  oscillator.stopTime = setTimeout(() => {}, 0); // placeholder
 }
 
 function stopMusic() {
@@ -104,7 +102,6 @@ function startNormalMode() {
 
   const mode = modeSelect.value;
   recordText.textContent = getRecord(mode);
-
   timeLeft = Number(timeInput.value);
 
   // Crear cubos
@@ -119,7 +116,7 @@ function startNormalMode() {
   realSquare = squares[0];
   const fakes = squares.slice(1);
 
-  // Colores
+  // Colores según modo
   if (mode === "easy") {
     realSquare.style.background = "green";
     fakes.forEach(f => (f.style.background = "darkgreen"));
@@ -140,13 +137,7 @@ function startNormalMode() {
     gameArea.style.background = "#f2f2f2";
   }
 
-  // ===== MÚSICA SEGÚN MODO =====
-  if (mode === "easy") playMusic([261, 329, 392]); // C-E-G
-  if (mode === "normal") playMusic([330, 392, 440]); // E-G-A
-  if (mode === "hard") playMusic([440, 494, 523]); // A-B-C
-  if (mode === "nightmare") playMusic([523, 587, 659]); // C5-D5-E5
-
-  // Eventos
+  // Eventos de toque
   realSquare.addEventListener("pointerdown", () => {
     if (!gameRunning) return;
     score++;
@@ -177,6 +168,13 @@ function startNormalMode() {
 
   moveInterval = setInterval(() => squares.forEach(randomPos), speed);
 
+  // ===== INICIAR MÚSICA =====
+  if (mode === "easy") playMusic([261, 329, 392]);
+  if (mode === "normal") playMusic([330, 392, 440]);
+  if (mode === "hard") playMusic([440, 494, 523]);
+  if (mode === "nightmare") playMusic([523, 587, 659]);
+
+  // Timer
   timer = setInterval(() => {
     timeLeft--;
     if (timeLeft <= 0) endGame(mode);
@@ -195,8 +193,7 @@ function startHideMode() {
   const count = 12 + hidePhase * 2;
   squares = [];
 
-  // Música propia escondidas (tono simple)
-  playMusic([150, 200, 250]);
+  playMusic([150, 200, 250]); // música única
 
   for (let i = 0; i < count; i++) {
     const d = document.createElement("div");
@@ -230,13 +227,13 @@ function endGame(mode) {
   gameRunning = false;
   clearInterval(timer);
   clearInterval(moveInterval);
+  stopMusic();
   if (score > getRecord(mode)) {
     setRecord(mode, score);
     msg.textContent = "🔥 Nuevo récord!";
   } else {
     msg.textContent = "Fin del juego";
   }
-  stopMusic();
 }
 
 /* ===== BOTONES ===== */
