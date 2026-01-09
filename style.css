@@ -12,7 +12,6 @@ body {
   border: 3px solid black;
   position: relative;
   background-color: #f2f2f2;
-  touch-action: manipulation;
 }
 
 .square {
@@ -34,29 +33,25 @@ body {
 button {
   font-size: 18px;
   padding: 10px 20px;
-  margin-top: 10px;
 }
 
 #endMsg {
   font-weight: bold;
-  margin-top: 10px;
 }
 
 #comboMsg {
   position: fixed;
   top: 40%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(0.5);
-  font-size: 26px;
+  transform: translate(-50%, -50%) scale(0.6);
+  font-size: 24px;
   font-weight: bold;
   color: gold;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0,0,0,0.8);
   padding: 15px 25px;
   border-radius: 15px;
   opacity: 0;
-  pointer-events: none;
-  transition: all 0.4s ease;
-  z-index: 9999;
+  transition: 0.3s;
 }
 
 #comboMsg.show {
