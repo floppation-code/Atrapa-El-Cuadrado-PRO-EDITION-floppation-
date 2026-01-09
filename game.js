@@ -12,21 +12,61 @@ const timeInput = document.getElementById("timeInput");
 const modeSelect = document.getElementById("mode");
 const startBtn = document.getElementById("startBtn");
 const endMsg = document.getElementById("endMsg");
+const comboMsg = document.getElementById("comboMsg");
 
 let record = localStorage.getItem("record") || 0;
 recordText.textContent = record;
 
+/* ---------- UTILIDADES ---------- */
+
 function randomPos(el) {
-  const maxX = gameArea.clientWidth - el.clientWidth;
-  const maxY = gameArea.clientHeight - el.clientHeight;
-  el.style.left = Math.random() * maxX + "px";
-  el.style.top = Math.random() * maxY + "px";
+  let safe = false;
+
+  while (!safe) {
+    const maxX = gameArea.clientWidth - el.clientWidth;
+    const maxY = gameArea.clientHeight - el.clientHeight;
+
+    el.style.left = Math.random() * maxX + "px";
+    el.style.top = Math.random() * maxY + "px";
+
+    safe = true;
+    document.querySelectorAll(".square").forEach(other => {
+      if (other !== el && isColliding(el, other)) {
+        safe = false;
+      }
+    });
+  }
+}
+
+function isColliding(a, b) {
+  const ar = a.getBoundingClientRect();
+  const br = b.getBoundingClientRect();
+
+  return !(
+    ar.right < br.left ||
+    ar.left > br.right ||
+    ar.bottom < br.top ||
+    ar.top > br.bottom
+  );
 }
 
 function moveAll() {
   randomPos(real);
   fakes.forEach(f => randomPos(f));
 }
+
+function showCombo(points) {
+  if (points > 1000) return;
+
+  comboMsg.textContent = `🎉 Wow, conseguiste ${points} puntos ¡felicidades!`;
+  comboMsg.classList.add("show");
+
+  setTimeout(() => {
+    comboMsg.classList.remove("show");
+  }, 1200);
+}
+
+/* ---------- JUEGO ---------- */
 
 function endGame() {
   gameRunning = false;
@@ -44,21 +84,27 @@ function endGame() {
     endMsg.textContent = "Fin del juego | Puntos: " + score;
   }
 
-  // Restaurar fondo
   gameArea.style.backgroundColor = "#f2f2f2";
 }
 
 function tapReal(e) {
   e.preventDefault();
   if (!gameRunning) return;
+
   score++;
   scoreText.textContent = score;
+
+  if (score % 10 === 0) {
+    showCombo(score);
+  }
+
   randomPos(real);
 }
 
 function tapFake(e) {
   e.preventDefault();
   if (!gameRunning) return;
+
   score = Math.max(0, score - 1);
   scoreText.textContent = score;
 }
@@ -71,6 +117,8 @@ fakes.forEach(f => {
   f.addEventListener("click", tapFake);
 });
 
+/* ---------- INICIO ---------- */
+
 startBtn.onclick = () => {
   score = 0;
   scoreText.textContent = score;
@@ -79,27 +127,24 @@ startBtn.onclick = () => {
   timeLeft = Number(timeInput.value);
   gameRunning = true;
 
-  // Mostrar cuadrados
   document.querySelectorAll(".square").forEach(s => s.style.display = "block");
 
   const mode = modeSelect.value;
 
   if (mode === "hard") {
-    real.style.backgroundColor = "#8B0000"; // rojo oscuro
-    fakes.forEach(f => f.style.backgroundColor = "#7a0000"); // casi rojo
-    gameArea.style.backgroundColor = "#f2f2f2"; // fondo normal
+    real.style.backgroundColor = "#8B0000";
+    fakes.forEach(f => f.style.backgroundColor = "#7A0000");
+    gameArea.style.backgroundColor = "#f2f2f2";
     moveInterval = setInterval(moveAll, 500);
   } else if (mode === "nightmare") {
-    // Todos los cuadrados iguales
-    real.style.backgroundColor = "#A50000"; // rojo intenso
+    real.style.backgroundColor = "#A50000";
     fakes.forEach(f => f.style.backgroundColor = "#A50000");
-    gameArea.style.backgroundColor = "#B30000"; // rojo fondo un poco distinto
-    moveInterval = setInterval(moveAll, 300); // se mueven más rápido
+    gameArea.style.backgroundColor = "#B30000";
+    moveInterval = setInterval(moveAll, 300);
   } else {
-    // Normal
     real.style.backgroundColor = "red";
     fakes.forEach(f => f.style.backgroundColor = "blue");
-    gameArea.style.backgroundColor = "#f2f2f2"; // fondo normal
+    gameArea.style.backgroundColor = "#f2f2f2";
     moveInterval = setInterval(moveAll, 900);
   }
 
