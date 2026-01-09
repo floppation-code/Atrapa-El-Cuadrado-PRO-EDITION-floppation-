@@ -13,72 +13,74 @@ const modeSelect = document.getElementById("mode");
 const startBtn = document.getElementById("startBtn");
 const endMsg = document.getElementById("endMsg");
 const comboMsg = document.getElementById("comboMsg");
+const modeText = document.getElementById("modeText");
 
-let record = localStorage.getItem("record") || 0;
-recordText.textContent = record;
+/* ===== RECORD POR MODO ===== */
+function getRecord(mode) {
+  return Number(localStorage.getItem("record_" + mode) || 0);
+}
+
+function setRecord(mode, value) {
+  localStorage.setItem("record_" + mode, value);
+}
 
 /* ===== AUDIO SEGURO ===== */
 let audioCtx = null;
-let musicInterval = null;
+let musicTimer = null;
 
 function stopMusic() {
-  if (musicInterval) clearInterval(musicInterval);
-  musicInterval = null;
+  if (musicTimer) clearInterval(musicTimer);
+  musicTimer = null;
   if (audioCtx) {
     audioCtx.close();
     audioCtx = null;
   }
 }
 
-function playTone(freq, duration, type) {
+function playTone(freq, dur, type) {
   if (!audioCtx) return;
-
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-
-  osc.type = type;
-  osc.frequency.value = freq;
-  gain.gain.value = 0.05;
-
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-
-  osc.start();
-  osc.stop(audioCtx.currentTime + duration);
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.value = freq;
+  g.gain.value = 0.04;
+  o.connect(g);
+  g.connect(audioCtx.destination);
+  o.start();
+  o.stop(audioCtx.currentTime + dur);
 }
 
 function startMusic(mode) {
   try {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   } catch {
-    return; // si el audio falla, el juego sigue
+    return;
   }
 
   let notes, speed, wave;
-
   if (mode === "normal") {
-    notes = [440, 523, 659, 523];
-    speed = 400;
+    notes = [440, 523, 659];
+    speed = 450;
     wave = "sine";
   } else if (mode === "hard") {
-    notes = [220, 247, 262, 294];
-    speed = 250;
+    notes = [220, 247, 294];
+    speed = 300;
     wave = "square";
   } else {
-    notes = [110, 123, 98, 130];
-    speed = 180;
+    notes = [110, 98, 123];
+    speed = 200;
     wave = "sawtooth";
   }
 
   let i = 0;
-  musicInterval = setInterval(() => {
+  musicTimer = setInterval(() => {
     playTone(notes[i % notes.length], 0.25, wave);
     i++;
   }, speed);
 }
 
 /* ===== COLISIONES ===== */
-function isColliding(a, b) {
+function collides(a, b) {
   const ar = a.getBoundingClientRect();
   const br = b.getBoundingClientRect();
   return !(
@@ -98,7 +100,7 @@ function randomPos(el) {
     el.style.top = Math.random() * maxY + "px";
     ok = true;
     document.querySelectorAll(".square").forEach(o => {
-      if (o !== el && isColliding(el, o)) ok = false;
+      if (o !== el && collides(el, o)) ok = false;
     });
   }
 }
@@ -109,10 +111,15 @@ function moveAll() {
 }
 
 /* ===== MENSAJES ===== */
-function showCombo(points) {
-  comboMsg.textContent = `🎉 Wow conseguiste ${points} puntos ¡felicidades!`;
+function showCombo(p) {
+  comboMsg.textContent = `🎉 Wow, ${p} puntos!`;
   comboMsg.classList.add("show");
   setTimeout(() => comboMsg.classList.remove("show"), 1200);
+}
+
+/* ===== VIBRACIÓN ===== */
+function vibrate(ms) {
+  if (navigator.vibrate) navigator.vibrate(ms);
 }
 
 /* ===== JUEGO ===== */
@@ -124,40 +131,38 @@ function endGame() {
 
   document.querySelectorAll(".square").forEach(s => s.style.display = "none");
 
-  if (score > record) {
-    record = score;
-    localStorage.setItem("record", record);
-    recordText.textContent = record;
-    endMsg.textContent = "🔥 ¡Nuevo récord! " + score;
+  const mode = modeSelect.value;
+  let rec = getRecord(mode);
+
+  if (score > rec) {
+    setRecord(mode, score);
+    recordText.textContent = score;
+    endMsg.textContent = "🔥 Nuevo récord!";
   } else {
-    endMsg.textContent = "Fin del juego | Puntos: " + score;
+    endMsg.textContent = "Fin del juego";
   }
 
   gameArea.style.backgroundColor = "#f2f2f2";
 }
 
-function tapReal(e) {
-  e.preventDefault();
+function tapReal() {
   if (!gameRunning) return;
   score++;
+  vibrate(40);
   scoreText.textContent = score;
   if (score % 10 === 0 && score <= 1000) showCombo(score);
   randomPos(real);
 }
 
-function tapFake(e) {
-  e.preventDefault();
+function tapFake() {
   if (!gameRunning) return;
+  vibrate(80);
   score = Math.max(0, score - 1);
   scoreText.textContent = score;
 }
 
-real.addEventListener("click", tapReal);
-real.addEventListener("touchstart", tapReal);
-fakes.forEach(f => {
-  f.addEventListener("click", tapFake);
-  f.addEventListener("touchstart", tapFake);
-});
+real.onclick = tapReal;
+fakes.forEach(f => f.onclick = tapFake);
 
 /* ===== START ===== */
 startBtn.onclick = () => {
@@ -167,17 +172,22 @@ startBtn.onclick = () => {
   timeLeft = Number(timeInput.value);
   gameRunning = true;
 
+  const mode = modeSelect.value;
+  modeText.textContent =
+    mode === "normal" ? "Normal" :
+    mode === "hard" ? "Difícil" : "Pesadilla";
+
+  recordText.textContent = getRecord(mode);
+
   document.querySelectorAll(".square").forEach(s => s.style.display = "block");
 
-  const mode = modeSelect.value;
-
-  if (mode === "hard") {
+  if (mode === "normal") {
+    moveInterval = setInterval(moveAll, 900);
+  } else if (mode === "hard") {
     moveInterval = setInterval(moveAll, 500);
-  } else if (mode === "nightmare") {
+  } else {
     gameArea.style.backgroundColor = "#7a0000";
     moveInterval = setInterval(moveAll, 300);
-  } else {
-    moveInterval = setInterval(moveAll, 900);
   }
 
   moveAll();
