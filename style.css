@@ -41,3 +41,25 @@ button {
   font-weight: bold;
   margin-top: 10px;
 }
+
+#comboMsg {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.5);
+  font-size: 26px;
+  font-weight: bold;
+  color: gold;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 15px 25px;
+  border-radius: 15px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.4s ease;
+  z-index: 9999;
+}
+
+#comboMsg.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
