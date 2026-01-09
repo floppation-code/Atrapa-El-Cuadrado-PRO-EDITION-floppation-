@@ -43,6 +43,9 @@ function endGame() {
   } else {
     endMsg.textContent = "Fin del juego | Puntos: " + score;
   }
+
+  // Restaurar fondo
+  gameArea.style.backgroundColor = "#f2f2f2";
 }
 
 function tapReal(e) {
@@ -84,10 +87,19 @@ startBtn.onclick = () => {
   if (mode === "hard") {
     real.style.backgroundColor = "#8B0000"; // rojo oscuro
     fakes.forEach(f => f.style.backgroundColor = "#7a0000"); // casi rojo
+    gameArea.style.backgroundColor = "#f2f2f2"; // fondo normal
     moveInterval = setInterval(moveAll, 500);
+  } else if (mode === "nightmare") {
+    // Todos los cuadrados iguales
+    real.style.backgroundColor = "#A50000"; // rojo intenso
+    fakes.forEach(f => f.style.backgroundColor = "#A50000");
+    gameArea.style.backgroundColor = "#B30000"; // rojo fondo un poco distinto
+    moveInterval = setInterval(moveAll, 300); // se mueven más rápido
   } else {
+    // Normal
     real.style.backgroundColor = "red";
     fakes.forEach(f => f.style.backgroundColor = "blue");
+    gameArea.style.backgroundColor = "#f2f2f2"; // fondo normal
     moveInterval = setInterval(moveAll, 900);
   }
 
