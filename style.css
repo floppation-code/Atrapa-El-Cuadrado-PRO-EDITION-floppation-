@@ -12,6 +12,7 @@ body {
   border: 3px solid black;
   position: relative;
   background: #f2f2f2;
+  overflow: hidden;
 }
 
 .square {
@@ -19,7 +20,6 @@ body {
   height: 45px;
   position: absolute;
   border-radius: 10px;
-
   touch-action: none;
   user-select: none;
 }
