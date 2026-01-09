@@ -11,7 +11,7 @@
 
 <p>
   Puntos: <span id="score">0</span> |
-  Récord (<span id="modeText">Normal</span>):
+  Récord (<span id="modeText">Fácil</span>):
   <span id="record">0</span>
 </p>
 
@@ -23,9 +23,10 @@
 <p>
   Modo:
   <select id="mode">
+    <option value="easy">Fácil</option>
     <option value="normal">Normal</option>
-    <option value="hard">Difícil</option>
-    <option value="nightmare">Pesadilla</option>
+    <option value="hard" disabled>Difícil 🔒 (5 pts)</option>
+    <option value="nightmare" disabled>Pesadilla 🔒 (10 pts)</option>
   </select>
 </p>
 
