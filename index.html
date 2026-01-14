@@ -7,45 +7,46 @@
 </head>
 <body>
 
-<h2>Atrapa el Cuadrado PRO</h2>
+<h1>Atrapa el Cuadrado PRO</h1>
 
-<div id="panelNormal">
-  <p>
-    Puntos: <span id="score">0</span> |
-    Récord: <span id="record">0</span>
-  </p>
-  <p>
-    Tiempo:
-    <input type="number" id="timeInput" value="30" min="5" max="120"> s
-  </p>
+<!-- PANEL DE OPCIONES -->
+<div id="options">
+  <h3>Opciones</h3>
+  Nombre:
+  <input id="playerName" placeholder="Jugador">
+  <br>
+  <label><input type="checkbox" id="musicToggle" checked> Música</label>
+  <label><input type="checkbox" id="vibrationToggle" checked> Vibración</label>
+</div>
 
-  <h3>Modo Normal</h3>
+<!-- PANEL MODOS -->
+<div id="modes">
   <select id="mode">
     <option value="easy">Fácil</option>
     <option value="normal">Normal</option>
     <option value="hard">Difícil</option>
-    <option value="nightmare">Pesadilla</option>
+    <option value="nightmare" disabled>Pesadilla 🔒</option>
+    <option value="hide">Escondidas</option>
   </select>
+  <button id="startBtn">Jugar</button>
+  <button id="exitBtn">Salir</button>
 </div>
 
-<div id="panelHide" style="display:none;">
-  <p>Fase: <span id="phase">1</span></p>
-</div>
-
-<h3>Modos Extras</h3>
-<select id="extraMode">
-  <option value="none">—</option>
-  <option value="hide">Escondidas</option>
-</select>
+<p>
+  Puntos/Fase: <span id="score">0</span> |
+  Récord: <span id="record">0</span>
+</p>
 
 <div id="gameArea"></div>
 
-<div id="comboMsg"></div>
+<p id="message"></p>
 
-<button id="startBtn">Empezar</button>
-<button id="exitBtn" style="display:none;">Salir</button>
-
-<p id="msg"></p>
+<!-- TOP RÉCORDS -->
+<div id="topPanel">
+  <h3>🏆 Top Récords</h3>
+  <select id="topMode"></select>
+  <ol id="topList"></ol>
+</div>
 
 <script src="game.js"></script>
 </body>
