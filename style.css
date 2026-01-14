@@ -1,17 +1,16 @@
 body {
-  font-family: Arial, sans-serif;
+  font-family: Arial;
   text-align: center;
-  margin: 0;
-  padding: 10px;
+  background: #f2f2f2;
 }
 
 #gameArea {
-  width: 95vw;
+  width: 90vw;
   height: 60vh;
   margin: auto;
   border: 3px solid black;
   position: relative;
-  background: #f2f2f2;
+  background: #ddd;
 }
 
 .square {
@@ -19,19 +18,19 @@ body {
   height: 45px;
   position: absolute;
   border-radius: 10px;
-
-  touch-action: none;
-  user-select: none;
 }
 
-#comboMsg {
+.real { background: red; }
+.fake { background: blue; }
+
+#options, #topPanel {
+  margin: 10px;
+  padding: 10px;
+  border: 2px solid #000;
+  background: #fff;
+}
+
+#message {
   font-weight: bold;
-  color: darkred;
-  height: 24px;
-}
-
-button {
-  font-size: 18px;
-  padding: 10px 20px;
   margin-top: 10px;
 }
