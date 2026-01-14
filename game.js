@@ -1,255 +1,143 @@
 const gameArea = document.getElementById("gameArea");
 const scoreText = document.getElementById("score");
 const recordText = document.getElementById("record");
-const timeInput = document.getElementById("timeInput");
+const message = document.getElementById("message");
+
 const modeSelect = document.getElementById("mode");
-const extraModeSelect = document.getElementById("extraMode");
 const startBtn = document.getElementById("startBtn");
 const exitBtn = document.getElementById("exitBtn");
-const msg = document.getElementById("msg");
-const panelNormal = document.getElementById("panelNormal");
-const panelHide = document.getElementById("panelHide");
-const phaseText = document.getElementById("phase");
-const comboMsg = document.getElementById("comboMsg");
 
-let squares = [];
-let realSquare = null;
+const nameInput = document.getElementById("playerName");
+const musicToggle = document.getElementById("musicToggle");
+const vibrationToggle = document.getElementById("vibrationToggle");
+
+const topMode = document.getElementById("topMode");
+const topList = document.getElementById("topList");
 
 let score = 0;
-let timeLeft = 0;
-let timer = null;
-let moveInterval = null;
-let gameRunning = false;
-let hidePhase = 1;
+let running = false;
+let squares = [];
+let mode = "normal";
+let moveInterval;
 
-/* ===== RECORD ===== */
-function getRecord(mode) {
-  return Number(localStorage.getItem("record_" + mode) || 0);
-}
-function setRecord(mode, val) {
-  localStorage.setItem("record_" + mode, val);
-}
+const speeds = {
+  easy: 1200,
+  normal: 900,
+  hard: 500,
+  nightmare: 350,
+  hide: 0
+};
 
-/* ===== LIMPIAR JUEGO ===== */
+const colors = {
+  easy: { real: "green", fake: "blue", bg: "#eaffea" },
+  normal: { real: "red", fake: "blue", bg: "#ddd" },
+  hard: { real: "#8b0000", fake: "#7a0000", bg: "#ccc" },
+  nightmare: { real: "#550000", fake: "#550000", bg: "#400000" },
+  hide: { real: "#444", fake: "#555", bg: "#222" }
+};
+
+function saveName() {
+  localStorage.setItem("playerName", nameInput.value || "Jugador");
+}
+nameInput.value = localStorage.getItem("playerName") || "";
+
+nameInput.oninput = saveName;
+
 function clearGame() {
-  gameRunning = false;
-  clearInterval(timer);
-  clearInterval(moveInterval);
-  timer = null;
-  moveInterval = null;
   gameArea.innerHTML = "";
-  stopMusic();
+  squares = [];
+  clearInterval(moveInterval);
+  running = false;
 }
 
-/* ===== RANDOM ===== */
 function randomPos(el) {
   el.style.left = Math.random() * (gameArea.clientWidth - 50) + "px";
   el.style.top = Math.random() * (gameArea.clientHeight - 50) + "px";
 }
 
-/* ===== ANIMACIÓN 10 PUNTOS ===== */
-function showCombo() {
-  comboMsg.textContent = `🔥 ${score} puntos`;
-  setTimeout(() => (comboMsg.textContent = ""), 800);
-}
-
-/* ===== MÚSICA POR MODO ===== */
-let audioCtx = null;
-let oscillator = null;
-
-function playMusic(freqs) {
-  stopMusic();
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  oscillator = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  oscillator.connect(gain);
-  gain.connect(audioCtx.destination);
-  gain.gain.value = 0.05;
-  oscillator.type = "sine";
-
-  let index = 0;
-  oscillator.frequency.value = freqs[index];
-  oscillator.start();
-
-  oscillator.interval = setInterval(() => {
-    index = (index + 1) % freqs.length;
-    oscillator.frequency.setValueAtTime(freqs[index], audioCtx.currentTime);
-  }, 400);
-}
-
-function stopMusic() {
-  if (oscillator) {
-    clearInterval(oscillator.interval);
-    oscillator.stop();
-    oscillator.disconnect();
-    oscillator = null;
-  }
-  if (audioCtx) {
-    audioCtx.close();
-    audioCtx = null;
+function vibrate(ms) {
+  if (vibrationToggle.checked && navigator.vibrate) {
+    navigator.vibrate(ms);
   }
 }
 
-/* ===== MODO NORMAL ===== */
-function startNormalMode() {
-  clearGame();
-  panelNormal.style.display = "block";
-  panelHide.style.display = "none";
-  exitBtn.style.display = "none";
-  msg.textContent = "";
-  score = 0;
-  scoreText.textContent = 0;
+function loadTop(mode) {
+  return JSON.parse(localStorage.getItem("top_" + mode)) || [];
+}
 
-  const mode = modeSelect.value;
-  recordText.textContent = getRecord(mode);
-  timeLeft = Number(timeInput.value);
+function saveTop(mode, value) {
+  let list = loadTop(mode);
+  list.push({ name: nameInput.value || "Jugador", value });
+  list.sort((a, b) => b.value - a.value);
+  list = list.slice(0, 10);
+  localStorage.setItem("top_" + mode, JSON.stringify(list));
+}
 
-  // Crear cubos
-  squares = [];
-  for (let i = 0; i < 3; i++) {
-    const d = document.createElement("div");
-    d.className = "square";
-    gameArea.appendChild(d);
-    squares.push(d);
-  }
-
-  realSquare = squares[0];
-  const fakes = squares.slice(1);
-
-  // Colores según modo
-  if (mode === "easy") {
-    realSquare.style.background = "green";
-    fakes.forEach(f => (f.style.background = "darkgreen"));
-  }
-  if (mode === "normal") {
-    realSquare.style.background = "red";
-    fakes.forEach(f => (f.style.background = "blue"));
-  }
-  if (mode === "hard") {
-    realSquare.style.background = "#8b0000";
-    fakes.forEach(f => (f.style.background = "#7a0000"));
-  }
-  if (mode === "nightmare") {
-    realSquare.style.background = "#7a0000";
-    fakes.forEach(f => (f.style.background = "#7a0000"));
-    gameArea.style.background = "#5c0000";
-  } else {
-    gameArea.style.background = "#f2f2f2";
-  }
-
-  // Eventos de toque
-  realSquare.addEventListener("pointerdown", () => {
-    if (!gameRunning) return;
-    score++;
-    scoreText.textContent = score;
-    if (score % 10 === 0) showCombo();
-    navigator.vibrate?.(40);
-    randomPos(realSquare);
+function showTop() {
+  topList.innerHTML = "";
+  loadTop(topMode.value).forEach(e => {
+    const li = document.createElement("li");
+    li.textContent = `${e.name}: ${e.value}`;
+    topList.appendChild(li);
   });
-
-  fakes.forEach(f =>
-    f.addEventListener("pointerdown", () => {
-      if (!gameRunning) return;
-      score = Math.max(0, score - 1);
-      scoreText.textContent = score;
-      navigator.vibrate?.(20);
-    })
-  );
-
-  squares.forEach(randomPos);
-  gameRunning = true;
-
-  // ===== VELOCIDAD SEGÚN MODO =====
-  let speed = 900;
-  if (mode === "easy") speed = 1200;
-  if (mode === "normal") speed = 900;
-  if (mode === "hard") speed = 500;
-  if (mode === "nightmare") speed = 300;
-
-  moveInterval = setInterval(() => squares.forEach(randomPos), speed);
-
-  // ===== INICIAR MÚSICA =====
-  if (mode === "easy") playMusic([261, 329, 392]);
-  if (mode === "normal") playMusic([330, 392, 440]);
-  if (mode === "hard") playMusic([440, 494, 523]);
-  if (mode === "nightmare") playMusic([523, 587, 659]);
-
-  // Timer
-  timer = setInterval(() => {
-    timeLeft--;
-    if (timeLeft <= 0) endGame(mode);
-  }, 1000);
 }
 
-/* ===== MODO ESCONDIDAS ===== */
-function startHideMode() {
+["easy","normal","hard","nightmare","hide"].forEach(m=>{
+  const o=document.createElement("option");
+  o.value=m; o.textContent=m;
+  topMode.appendChild(o);
+});
+
+topMode.onchange = showTop;
+showTop();
+
+function startGame() {
   clearGame();
-  panelNormal.style.display = "none";
-  panelHide.style.display = "block";
-  exitBtn.style.display = "inline-block";
-  msg.textContent = "";
-  phaseText.textContent = hidePhase;
+  score = 0;
+  scoreText.textContent = score;
+  mode = modeSelect.value;
+  running = true;
 
-  const count = 12 + hidePhase * 2;
-  squares = [];
+  gameArea.style.background = colors[mode].bg;
 
-  playMusic([150, 200, 250]); // música única
-
+  let count = mode === "hide" ? 30 : 3;
   for (let i = 0; i < count; i++) {
     const d = document.createElement("div");
-    d.className = "square";
-    d.style.background = "#9c0000";
+    d.className = "square " + (i === 0 ? "real" : "fake");
+    d.style.background = i === 0 ? colors[mode].real : colors[mode].fake;
+    randomPos(d);
+    d.onclick = () => {
+      if (!running) return;
+      if (i === 0) {
+        score++;
+        vibrate(50);
+        scoreText.textContent = score;
+        if (mode !== "hide") randomPos(d);
+      } else {
+        score = Math.max(0, score - 1);
+        vibrate(150);
+        scoreText.textContent = score;
+      }
+    };
     gameArea.appendChild(d);
     squares.push(d);
   }
 
-  const realIndex = Math.floor(Math.random() * count);
-  realSquare = squares[realIndex];
-  realSquare.style.background = "#b00000";
-
-  squares.forEach(s => {
-    s.style.display = "block";
-    randomPos(s);
-    s.addEventListener("pointerdown", () => {
-      if (!gameRunning) return;
-      if (s === realSquare) {
-        hidePhase++;
-        startHideMode();
-      }
-    });
-  });
-
-  gameRunning = true;
-}
-
-/* ===== FIN DEL JUEGO ===== */
-function endGame(mode) {
-  gameRunning = false;
-  clearInterval(timer);
-  clearInterval(moveInterval);
-  stopMusic();
-  if (score > getRecord(mode)) {
-    setRecord(mode, score);
-    msg.textContent = "🔥 Nuevo récord!";
-  } else {
-    msg.textContent = "Fin del juego";
+  if (speeds[mode] > 0) {
+    moveInterval = setInterval(()=>{
+      squares.forEach(s=>randomPos(s));
+    }, speeds[mode]);
   }
 }
 
-/* ===== BOTONES ===== */
-startBtn.onclick = () => {
-  hidePhase = 1;
-  if (extraModeSelect.value === "hide") {
-    startHideMode();
-  } else {
-    startNormalMode();
+function exitGame() {
+  if (score >= 10) {
+    saveTop(mode, score);
+    message.textContent = "🔥 ¡Wow! Llegaste a 10 — Inscribite en el Top Récords!";
   }
-};
-
-exitBtn.onclick = () => {
   clearGame();
-  panelHide.style.display = "none";
-  panelNormal.style.display = "block";
-  exitBtn.style.display = "none";
-  msg.textContent = "Modo cancelado";
-};
+  showTop();
+}
+
+startBtn.onclick = startGame;
+exitBtn.onclick = exitGame;
