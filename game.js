@@ -20,6 +20,20 @@ let squares = [];
 let mode = "normal";
 let moveInterval;
 
+/* =========================
+   INICIALIZAR TOP FÁCIL
+   ========================= */
+if (!localStorage.getItem("top_easy")) {
+  const defaultEasyTop = [
+    { name: "Mr. Eye", value: 300 },
+    { name: "Elver Galarga", value: 100 },
+    { name: "Floppation 👑", value: 34 }
+  ];
+  localStorage.setItem("top_easy", JSON.stringify(defaultEasyTop));
+}
+
+/* ========================= */
+
 const speeds = {
   easy: 1200,
   normal: 900,
@@ -40,7 +54,6 @@ function saveName() {
   localStorage.setItem("playerName", nameInput.value || "Jugador");
 }
 nameInput.value = localStorage.getItem("playerName") || "";
-
 nameInput.oninput = saveName;
 
 function clearGame() {
